@@ -37,8 +37,9 @@ void status()
     }
     if (NMEA[0][0] == '\0') 
     {
-        NMEA[0][0] = '\0';
+        NMEA[0][0] = '0'; // กำหนดค่าเป็น '0' เพื่อหลีกเลี่ยงการแปลงค่า \0
     }
+    
     GPS_variable[0] = NMEA[0][0] - '0';
 }
 
@@ -170,13 +171,13 @@ void *Log(void *arg) {
 	    .mq_msgsize = sizeof(Message)
      };
 
-    Message send_msg = {0};
-    Message receive_msg = {0};
+    Message struct_to_send = {0};
+    Message struct_to_receive = {0};
 
-    // ดึงเวลาปัจจุบันเป็น UNIX timestamp
+    // ´Ö§àÇÅÒ»Ñ¨¨ØºÑ¹à»ç¹ UNIX timestamp
     time(&now);
 
-    // สร้างชื่อไฟล์จากค่าเวลา UNIX
+    // ÊÃéÒ§ª×èÍä¿Åì¨Ò¡¤èÒàÇÅÒ UNIX
     
     mqd_t mq_send_log = mq_open("/mq_telecommand_send_log", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
     if (mq_send_log == -1) {
@@ -185,14 +186,14 @@ void *Log(void *arg) {
     }
    
     
-    // เปิดไฟล์สำหรับเขียน
+    // à»Ô´ä¿ÅìÊÓËÃÑºà¢ÕÂ¹
     while(1){
-      if (mq_receive(mq_send_log, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {
+      if (mq_receive(mq_send_log, (char *)&struct_to_receive, sizeof(struct_to_receive), NULL) == -1) {
                     perror("mq_receive");
                     exit(EXIT_FAILURE);
       }
       
-      if (receive_msg.req_id == 3 && (receive_msg.param >= 5 && receive_msg.param <= 60)) 
+      if (struct_to_receive.req_id == 3 && (struct_to_receive.param >= 5 && struct_to_receive.param <= 60)) 
       {
         printf("Strat Log\n");
         snprintf(filename, sizeof(filename), "gps_log_%ld.txt", (long)now);
@@ -201,7 +202,7 @@ void *Log(void *arg) {
               perror("Error opening log file");
               exit(EXIT_FAILURE);
           }
-        // เขียนข้อมูล Header ลงในไฟล์
+        // à¢ÕÂ¹¢éÍÁÙÅ Header Å§ã¹ä¿Åì
           fprintf(log_file, "Start Log Time: %ld\n", (long)now);
           fprintf(log_file, "1, 0, 1, 2, \"Status\", 0, 1,0, []\n");
           fprintf(log_file, "1, 0, 1, 2, \"Time\", 0, 1,0, []\n");
@@ -216,10 +217,10 @@ void *Log(void *arg) {
         
         while(1){
         printf("Strat Log\n");
-          // ดึงเวลาอีกครั้งก่อนบันทึกค่าจริง
+          // ´Ö§àÇÅÒÍÕ¡¤ÃÑé§¡èÍ¹ºÑ¹·Ö¡¤èÒ¨ÃÔ§
           time(&now);
           
-          // บันทึกข้อมูล GPS ลงไฟล์
+          // ºÑ¹·Ö¡¢éÍÁÙÅ GPS Å§ä¿Åì
           fprintf(log_file, "%ld, ", (long)now);
           fprintf(log_file, "%u, ", GPS_variable[0]);
           fprintf(log_file, "%u, ", GPS_variable[1]);
@@ -232,16 +233,16 @@ void *Log(void *arg) {
           fprintf(log_file, "%hu\n", GPS_variable[10]);*/
           fflush(log_file);
           
-          sleep(receive_msg.param);
+          sleep(struct_to_receive.param);
           struct timespec ts;
                     clock_gettime(CLOCK_REALTIME, &ts);
-                    ts.tv_sec += 1; // รอ 1 วินาทีสำหรับ message ใหม่
+                    ts.tv_sec += 1; // ÃÍ 1 ÇÔ¹Ò·ÕÊÓËÃÑº message ãËÁè
 
-                    if (mq_timedreceive(mq_send_log, (char *)&receive_msg, sizeof(receive_msg), NULL, &ts) != -1) {
-                        if (receive_msg.req_id == 4) {
+                    if (mq_timedreceive(mq_send_log, (char *)&struct_to_receive, sizeof(struct_to_receive), NULL, &ts) != -1) {
+                        if (struct_to_receive.req_id == 4) {
                             printf("Stop Log\n");
                             fclose(log_file);
-                            receive_msg.req_id = 0;
+                            struct_to_receive.req_id = 0;
                             break;
                         } 
                             
@@ -267,8 +268,8 @@ void *update_variable(void *arg) {
 	    .mq_msgsize = sizeof(Message)
 	};
 
-    Message send_msg = {0};
-    Message receive_msg = {0};
+    Message struct_to_send = {0};
+    Message struct_to_receive = {0};
     mqd_t mq_send_read = mq_open("/mq_telecommand_send_read", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
     if (mq_send_read == -1) {
         perror("mq_open");
@@ -279,22 +280,22 @@ void *update_variable(void *arg) {
         status();
         latitude();
 	      longitude();
-         //printf("%s\n",GPS_variable[0]);
+         //printf("%u\n",GPS_variable[0]);
 	    //printf("%s\n",GPS_variable[1]);
 	    //printf("%f\n",GPS_variable[3]*0.000001);
-        if (GPS_variable[0] != '\0') {
+        if (GPS_variable[0] != 0) {
             GPS_variable[12] = 1;
             
 
             if (GPS_variable[12] == 1 && GPS_variable[0] == 1) {
-                if (mq_receive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {
+                if (mq_receive(mq_send_read, (char *)&struct_to_receive, sizeof(struct_to_receive), NULL) == -1) {
                     perror("mq_receive");
                     exit(EXIT_FAILURE);
                 }
             }
 
-            if (receive_msg.req_id == 1 && GPS_variable[0] == 1) {
-                receive_msg.req_id = 0;
+            if (struct_to_receive.req_id == 1 && GPS_variable[0] == 1) {
+                struct_to_receive.req_id = 0;
                 printf("Start Sampling\n");
                 while (1) {
                     GPS_variable[0] = 2;
@@ -308,13 +309,13 @@ void *update_variable(void *arg) {
                     SOG();*/
                     struct timespec ts;
                     clock_gettime(CLOCK_REALTIME, &ts);
-                    ts.tv_sec += 1; // รอ 1 วินาทีสำหรับ message ใหม่
+                    ts.tv_sec += 1; // ÃÍ 1 ÇÔ¹Ò·ÕÊÓËÃÑº message ãËÁè
 
-                    if (mq_timedreceive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL, &ts) != -1) {
-                        if (receive_msg.req_id == 2) {
+                    if (mq_timedreceive(mq_send_read, (char *)&struct_to_receive, sizeof(struct_to_receive), NULL, &ts) != -1) {
+                        if (struct_to_receive.req_id == 2) {
                             printf("Stop Sampling\n");
                             memset(GPS_variable, 0, sizeof(GPS_variable));
-                            receive_msg.req_id = 0;
+                            struct_to_receive.req_id = 0;
                             break;
                         } 
                             
@@ -488,4 +489,5 @@ int parse_comma_delimited_str(char *string, char **fields, int max_fields)
     }
     return i - 1;
 }
+
 
