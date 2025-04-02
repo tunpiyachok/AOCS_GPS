@@ -16,8 +16,8 @@
 #include "gps.h"
 #include <pthread.h>
 
-Message struct_to_receive = {0};
-Message struct_to_send = {0};
+Message receive_msg = {0};
+Message send_msg = {0};
 
 
 
@@ -52,61 +52,61 @@ int main()
 
     while (1)
     {
-        if (mq_receive(mq_telecommand, (char *)&struct_to_receive, sizeof(struct_to_receive), NULL) == -1)
+        if (mq_receive(mq_telecommand, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1)
         {
             perror("mq_receive()");
             exit(1);
         }
 
-        if (struct_to_receive.mdid == 3 && struct_to_receive.req_id == 1)
+        if (receive_msg.mdid == 3 && receive_msg.req_id == 1)
         {
-        	struct_to_send = struct_to_receive;
-        	struct_to_send.val = 0;
-	        printf("Module : %hhu\n",struct_to_send.mdid);
-	        printf("Request : %hhu\n",struct_to_send.req_id);
-	        printf("Return : %u\n", struct_to_send.val);
+        	send_msg = receive_msg;
+        	send_msg.val = 0;
+	        printf("Module : %hhu\n",send_msg.mdid);
+	        printf("Request : %hhu\n",send_msg.req_id);
+	        printf("Return : %u\n", send_msg.val);
           printf("-------------------------------------------\n\n");
-          if (mq_send(mq_send_read, (char *)&struct_to_send, sizeof(struct_to_send), 1) == -1) 
+          if (mq_send(mq_send_read, (char *)&send_msg, sizeof(send_msg), 1) == -1) 
     			{
     				perror("mq_send");
     				exit(EXIT_FAILURE);
     			}  
         }
-        else if (struct_to_receive.mdid == 3 && struct_to_receive.req_id == 2)
+        else if (receive_msg.mdid == 3 && receive_msg.req_id == 2)
         {
-        	struct_to_send = struct_to_receive;
-        	struct_to_send.val = 1;
-	        printf("Module : %hhu\n",struct_to_send.mdid);
-	        printf("Request : %hhu\n",struct_to_send.req_id);
-	        printf("Return : %u\n", struct_to_send.val);
+        	send_msg = receive_msg;
+        	send_msg.val = 1;
+	        printf("Module : %hhu\n",send_msg.mdid);
+	        printf("Request : %hhu\n",send_msg.req_id);
+	        printf("Return : %u\n", send_msg.val);
           printf("-------------------------------------------\n\n");
-          if (mq_send(mq_send_read, (char *)&struct_to_send, sizeof(struct_to_send), 1) == -1) 
+          if (mq_send(mq_send_read, (char *)&send_msg, sizeof(send_msg), 1) == -1) 
     			{
     				perror("mq_send");
     				exit(EXIT_FAILURE);
     			}  
         }
-        else if (struct_to_receive.mdid == 3 && struct_to_receive.req_id == 3 && (struct_to_receive.param >= 5 && struct_to_receive.param <= 60))
+        else if (receive_msg.mdid == 3 && receive_msg.req_id == 3 && (receive_msg.param >= 5 && receive_msg.param <= 60))
         {
-        	struct_to_send = struct_to_receive;
-	        printf("Module : %hhu\n",struct_to_send.mdid);
-	        printf("Request : %hhu\n",struct_to_send.req_id);
-	        printf("Parameter. : %hhu\n",struct_to_send.param);
+        	send_msg = receive_msg;
+	        printf("Module : %hhu\n",send_msg.mdid);
+	        printf("Request : %hhu\n",send_msg.req_id);
+	        printf("Parameter. : %hhu\n",send_msg.param);
           printf("-------------------------------------------\n\n");
-          if (mq_send(mq_send_log, (char *)&struct_to_send, sizeof(struct_to_send), 1) == -1) 
+          if (mq_send(mq_send_log, (char *)&send_msg, sizeof(send_msg), 1) == -1) 
     			{
     				perror("mq_send");
     				exit(EXIT_FAILURE);
     			}  
         }
-        else if (struct_to_receive.mdid == 3 && struct_to_receive.req_id == 4)
+        else if (receive_msg.mdid == 3 && receive_msg.req_id == 4)
         {
-        	struct_to_send = struct_to_receive;
-	        printf("Module : %hhu\n",struct_to_send.mdid);
-	        printf("Request : %hhu\n",struct_to_send.req_id);
-	        printf("Parameter : %hhu\n",struct_to_send.param);
+        	send_msg = receive_msg;
+	        printf("Module : %hhu\n",send_msg.mdid);
+	        printf("Request : %hhu\n",send_msg.req_id);
+	        printf("Parameter : %hhu\n",send_msg.param);
           printf("-------------------------------------------\n\n");
-          if (mq_send(mq_send_log, (char *)&struct_to_send, sizeof(struct_to_send), 1) == -1) 
+          if (mq_send(mq_send_log, (char *)&send_msg, sizeof(send_msg), 1) == -1) 
     			{
     				perror("mq_send");
     				exit(EXIT_FAILURE);
@@ -115,17 +115,17 @@ int main()
         else
 	    {
 	    	printf("Request has deny\n");
-	    	printf("Module : %hhu\n",struct_to_send.mdid);
-	        printf("Request : %hhu\n",struct_to_send.req_id);
-	    	struct_to_send.mdid = 0;
-	    	struct_to_send.req_id = 0;
-	    	struct_to_send.val = 0;
-	    	struct_to_send.type = 1; 
+	    	printf("Module : %hhu\n",send_msg.mdid);
+	        printf("Request : %hhu\n",send_msg.req_id);
+	    	send_msg.mdid = 0;
+	    	send_msg.req_id = 0;
+	    	send_msg.val = 0;
+	    	send_msg.type = 1; 
 	    	printf("-------------------------------------------\n\n");
 		  }
         
-        Message struct_to_send = {0};
-		Message struct_to_receive = {0};
+        Message send_msg = {0};
+		Message receive_msg = {0};
     }
   	mq_close(mq_send_read);
      mq_close(mq_send_log);
@@ -136,4 +136,3 @@ int main()
     	
     return 0;
 }
-
