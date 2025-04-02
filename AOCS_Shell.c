@@ -20,105 +20,81 @@
 #include <time.h>
 #include "message.h"
 
-Message struct_type = {0};
-Message struct_to_send = {0}; // Initialize to 0
-Message struct_to_receive = {0};
+Message send_msg = {0}; // Initialize to 0
+Message receive_msg = {0};
 
 void tcc_type(void*arg)
 {
-	mqd_t mq_GPS = mq_open("/mq_GPS", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //send to TM_Monitor
-	if (mq_GPS == -1) 
-	{
-		perror("mq_open");
-		exit(EXIT_FAILURE);
-	}
-	mqd_t mq_tc_gps = mq_open("/mq_tc_gps", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //send to TC_Monitor
-	if (mq_tc_gps == -1) 
-	{
-		perror("mq_open");
-		exit(EXIT_FAILURE);
-	}
-	/*mqd_t mq_tm_imu = mq_open("/mq_tm_imu", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //send to TM_Monitor
-	if (mq_tm_imu == -1) 
-	{
-		perror("mq_open");
-		exit(EXIT_FAILURE);
-	}*/
-	mqd_t mq_imu = mq_open("/mq_imu", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //send to TC_Monitor
-	if (mq_imu == -1) 
-	{
-		perror("mq_open");
-		exit(EXIT_FAILURE);
-	}
-	mqd_t mqdes_type = mq_open("/mq_ttctype", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //receive from sender and Monitor
-	if (mqdes_type == -1) 
-	{
-	    perror("mq_open");
-	    exit(EXIT_FAILURE);
-	}
-	mqd_t mq_return = mq_open("/mq_return_sender", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //return to sender
-	if (mq_return == -1) 
-	{
-		perror("mq_open");
-		exit(EXIT_FAILURE);
-	}
-	while(1)
-	{
-		if (mq_receive(mqdes_type, (char *)&struct_to_receive, sizeof(Message), NULL) == -1) 
-		{
-			perror("mq_receive");
-			exit(EXIT_FAILURE);
-		}
-			
-		printf("Receive Type : %hhu\n", struct_to_receive.type);
-		if (struct_to_receive.type == 0 && struct_to_receive.mdid == 3) 
-		{
-			struct_to_send = struct_to_receive;
-			printf("Send Module ID : %hhu\n", struct_to_send.mdid);
-			printf("Send Request ID : %hhu\n", struct_to_send.req_id);
-			if (mq_send(mq_GPS, (char *)&struct_to_send, sizeof(struct_to_send), 1) == -1) 
-			{
-				perror("mq_send");
-				exit(EXIT_FAILURE);
-			}
-			printf("\n-- Wait for respond --\n");
-		}
-		else if(struct_to_receive.type == 2 && struct_to_receive.mdid == 3)
-		{
-			struct_to_send = struct_to_receive;
-			printf("Send Module ID : %hhu\n", struct_to_send.mdid);
-			printf("Send Request ID : %hhu\n", struct_to_send.req_id);
-			printf("Send Type : %hhu\n", struct_to_send.type);
-			printf("Send Parameter : %hhu\n", struct_to_send.param);
-			if (mq_send(mq_tc_gps, (char *)&struct_to_send, sizeof(Message), 1) == -1) 
-			{
-				perror("mq_send");
-				exit(EXIT_FAILURE);
-			}
-			printf("-------------------------------------------\n");	
-		}
-		else
-		{
-			printf("Have no request\n");
-			Message struct_to_send = {0};
-			if (mq_send(mq_return, (char *)&struct_to_send, sizeof(Message), 1) == -1) 
-			{
-				perror("mq_send");
-				exit(EXIT_FAILURE);
-			}
-			printf("-------------------------------------------\n");
-		}
-		Message struct_to_send = {0};
-		Message struct_to_receive = {0};
-	}
-	mq_close(mqdes_type);
-	mq_close(mq_GPS);
-	mq_close(mq_imu);
-	mq_close(mq_tc_gps);
-	mq_unlink("/mq_tc_gps");
-	mq_unlink("/mq_tc_gps");
-	mq_unlink("/mq_GPS");
-	mq_unlink("/mq_ttctype");
+    mqd_t mq_GPS = mq_open("/mq_GPS", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //send to TM_Monitor
+    if (mq_GPS == -1) {
+        perror("mq_open");
+        exit(EXIT_FAILURE);
+    }
+    mqd_t mq_tc_gps = mq_open("/mq_tc_gps", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //send to TC_Monitor
+    if (mq_tc_gps == -1) {
+        perror("mq_open");
+        exit(EXIT_FAILURE);
+    }
+
+    // à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸Šà¸·à¹ˆà¸­ message queue à¹ƒà¸«à¹‰à¸£à¸­à¸‡à¸£à¸±à¸šà¸à¸²à¸£à¹€à¸Šà¸·à¹ˆà¸­à¸¡à¸•à¹ˆà¸­à¸à¸±à¸š msg_dis_can
+    mqd_t mqdes_type = mq_open("/mq_dispatch", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); // receive from msg_dis_can
+    if (mqdes_type == -1) {
+        perror("mq_open");
+        exit(EXIT_FAILURE);
+    }
+    mqd_t mq_return = mq_open("/mq_dispatch", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); // send to msg_dis_can
+    if (mq_return == -1) {
+        perror("mq_open");
+        exit(EXIT_FAILURE);
+    }
+
+    while(1) {
+        if (mq_receive(mqdes_type, (char *)&receive_msg, sizeof(Message), NULL) == -1) {
+            perror("mq_receive");
+            exit(EXIT_FAILURE);
+        }
+
+        printf("Receive Type : %hhu\n", receive_msg.type);
+
+        if (receive_msg.type == 0 && receive_msg.mdid == 3) {
+            send_msg = receive_msg;
+            printf("Send Module ID : %hhu\n", send_msg.mdid);
+            printf("Send Request ID : %hhu\n", send_msg.req_id);
+            if (mq_send(mq_GPS, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                perror("mq_send");
+                exit(EXIT_FAILURE);
+            }
+            printf("\n-- Wait for respond --\n");
+        } else if(receive_msg.type == 2 && receive_msg.mdid == 3) {
+            send_msg = receive_msg;
+            printf("Send Module ID : %hhu\n", send_msg.mdid);
+            printf("Send Request ID : %hhu\n", send_msg.req_id);
+            printf("Send Type : %hhu\n", send_msg.type);
+            printf("Send Parameter : %hhu\n", send_msg.param);
+            if (mq_send(mq_tc_gps, (char *)&send_msg, sizeof(Message), 1) == -1) {
+                perror("mq_send");
+                exit(EXIT_FAILURE);
+            }
+            printf("-------------------------------------------\n");
+        } else {
+            printf("Have no request\n");
+            send_msg = (Message){0};
+            if (mq_send(mq_return, (char *)&send_msg, sizeof(Message), 1) == -1) {
+                perror("mq_send");
+                exit(EXIT_FAILURE);
+            }
+            printf("-------------------------------------------\n");
+        }
+        send_msg = (Message){0};
+        receive_msg = (Message){0};
+    }
+
+    mq_close(mqdes_type);
+    mq_close(mq_GPS);
+    mq_close(mq_tc_gps);
+    mq_unlink("/mq_tc_gps");
+    mq_unlink("/mq_GPS");
+    mq_unlink("/mq_dispatch");
 }
 
 void request_return(void*arg)
@@ -138,39 +114,39 @@ void request_return(void*arg)
 	}
 	while(1)
 	{
-		Message struct_to_send = {0};
-		Message struct_to_receive = {0};
-		if (mq_receive(mq_receive_req, (char *)&struct_to_receive, sizeof(Message), NULL) == -1) 
+		Message send_msg = {0};
+		Message receive_msg = {0};
+		if (mq_receive(mq_receive_req, (char *)&receive_msg, sizeof(Message), NULL) == -1) 
 		{
 			perror("mq_receive");
 			exit(EXIT_FAILURE);
 		}
-		struct_to_send = struct_to_receive;
-		printf("Receive Type : %hhu\n", struct_to_receive.type);
-		printf("Module ID : %u\n", struct_to_send.mdid);
-		if(struct_to_receive.type == 1)
+		send_msg = receive_msg;
+		printf("Receive Type : %hhu\n", receive_msg.type);
+		printf("Module ID : %u\n", send_msg.mdid);
+		if(receive_msg.type == 1)
 		{
-		    printf("Telemetry ID : %u\n", struct_to_send.req_id);
-			struct_to_send.val;
+		    printf("Telemetry ID : %u\n", send_msg.req_id);
+			send_msg.val;
 		}
-		else if(struct_to_receive.type == 3)
+		else if(receive_msg.type == 3)
 		{
-			printf("Telecommand ID : %hhu\n", struct_to_send.req_id); 
-		    struct_to_send.type = 3;
-		    printf("Parameter : %hhu\n", struct_to_send.param);
-			struct_to_send.val;
+			printf("Telecommand ID : %hhu\n", send_msg.req_id); 
+		    send_msg.type = 3;
+		    printf("Parameter : %hhu\n", send_msg.param);
+			send_msg.val;
 		}
 		
 		else
 		{
 			printf("Have no Type\n");
-			struct_to_send.type;
-			printf("Module ID : %u\n", struct_to_send.mdid);
-			struct_to_send.req_id = 0;
+			send_msg.type;
+			printf("Module ID : %u\n", send_msg.mdid);
+			send_msg.req_id = 0;
 			printf("-------------------------------------------\n\n");
 		}
 		
-		if (mq_send(mq_return, (char *)&struct_to_send, sizeof(Message), 1) == -1) 
+		if (mq_send(mq_return, (char *)&send_msg, sizeof(Message), 1) == -1) 
 		{
 			perror("mq_send");
 			exit(EXIT_FAILURE);
