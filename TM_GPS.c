@@ -13,8 +13,8 @@
 #include "gps.h"
 #include <pthread.h>
 
-Message struct_to_send = {0};
-Message struct_to_receive = {0};
+Message send_msg = {0};
+Message receive_msg = {0};
 
 int main()
 {	
@@ -44,74 +44,74 @@ int main()
 	}
 	while (1)
 	{
-		Message struct_to_send = {0};
-		Message struct_to_receive = {0};
-		if (mq_receive(mq_GPS, (char *)&struct_to_receive, sizeof(struct_to_receive), NULL) == -1) 
+		Message send_msg = {0};
+		Message receive_msg = {0};
+		if (mq_receive(mq_GPS, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) 
 		{
 			perror("mq_receive");
 			exit(EXIT_FAILURE);
 		}
-		struct_to_send = struct_to_receive;
-		if (struct_to_receive.mdid == 3 && struct_to_receive.req_id == 1) 
+		send_msg = receive_msg;
+		if (receive_msg.mdid == 3 && receive_msg.req_id == 1) 
 		{
-	        struct_to_send.val = GPS_variable[12];
-	        printf("Module : %hhu\n",struct_to_send.mdid);
-	        printf("Request : %hhu\n",struct_to_send.req_id);
-	    	printf("Find GPS : %u\n", struct_to_send.val);
-	    	struct_to_send.type = 1;
+	        send_msg.val = GPS_variable[12];
+	        printf("Module : %hhu\n",send_msg.mdid);
+	        printf("Request : %hhu\n",send_msg.req_id);
+	    	printf("Find GPS : %u\n", send_msg.val);
+	    	send_msg.type = 1;
 	    	printf("-------------------------------------------\n\n");
 	    }
-		else if (struct_to_receive.mdid == 3 && struct_to_receive.req_id == 2) 
+		else if (receive_msg.mdid == 3 && receive_msg.req_id == 2) 
 		{
-	        struct_to_send.val = GPS_variable[0];
-	        printf("Module : %hhu\n",struct_to_send.mdid);
-	        printf("Request : %hhu\n",struct_to_send.req_id);
-	    	printf("Status : %u\n", struct_to_send.val);
-	    	struct_to_send.type = 1;
+	        send_msg.val = GPS_variable[0];
+	        printf("Module : %hhu\n",send_msg.mdid);
+	        printf("Request : %hhu\n",send_msg.req_id);
+	    	printf("Status : %u\n", send_msg.val);
+	    	send_msg.type = 1;
 	    	printf("-------------------------------------------\n\n");
 	    }
-	    else if (struct_to_receive.mdid == 3 && struct_to_receive.req_id == 3) 
+	    else if (receive_msg.mdid == 3 && receive_msg.req_id == 3) 
 		{
-	        struct_to_send.val = GPS_variable[1];
-	        printf("Module : %hhu\n",struct_to_send.mdid);
-	        printf("Request : %hhu\n",struct_to_send.req_id);
-	    	printf("UNIXTIME : %u\n", struct_to_send.val);
-	    	struct_to_send.type = 1; 
+	        send_msg.val = GPS_variable[1];
+	        printf("Module : %hhu\n",send_msg.mdid);
+	        printf("Request : %hhu\n",send_msg.req_id);
+	    	printf("UNIXTIME : %u\n", send_msg.val);
+	    	send_msg.type = 1; 
 	    	printf("-------------------------------------------\n\n");
 	    }
-	    else if (struct_to_receive.mdid == 3 && struct_to_receive.req_id == 4) 
+	    else if (receive_msg.mdid == 3 && receive_msg.req_id == 4) 
 		{
-			struct_to_send.val = GPS_variable[2];
-			struct_to_send.param = GPS_variable[8];
-	        printf("Module : %hhu\n",struct_to_send.mdid);
-	        printf("Request : %hhu\n",struct_to_send.req_id);
-	    	printf("Latitude : %u\n", struct_to_send.val);
-	    	struct_to_send.type = 1; 
+			send_msg.val = GPS_variable[2];
+			send_msg.param = GPS_variable[8];
+	        printf("Module : %hhu\n",send_msg.mdid);
+	        printf("Request : %hhu\n",send_msg.req_id);
+	    	printf("Latitude : %u\n", send_msg.val);
+	    	send_msg.type = 1; 
 	    	printf("-------------------------------------------\n\n");
 	    }
-	    else if (struct_to_receive.mdid == 3 && struct_to_receive.req_id == 5) 
+	    else if (receive_msg.mdid == 3 && receive_msg.req_id == 5) 
 		{
-			struct_to_send.val = GPS_variable[3];
-			struct_to_send.param = GPS_variable[9];
-	        printf("Module : %hhu\n",struct_to_send.mdid);
-	        printf("Request : %hhu\n",struct_to_send.req_id);
-	    	printf("Longitude : %u\n", struct_to_send.val);
-	    	struct_to_send.type = 1; 
+			send_msg.val = GPS_variable[3];
+			send_msg.param = GPS_variable[9];
+	        printf("Module : %hhu\n",send_msg.mdid);
+	        printf("Request : %hhu\n",send_msg.req_id);
+	    	printf("Longitude : %u\n", send_msg.val);
+	    	send_msg.type = 1; 
 	    	printf("-------------------------------------------\n\n");
 	    }
 
-	    else if(struct_to_receive.mdid != 3)
+	    else if(receive_msg.mdid != 3)
 	    {
 	    	printf("Request has deny\n");
-	    	printf("Module : %hhu\n",struct_to_send.mdid);
-	        printf("Request : %hhu\n",struct_to_send.req_id);
-	    	struct_to_send.mdid = 0;
-	    	struct_to_send.req_id = 0;
-	    	struct_to_send.val = 0;
-	    	struct_to_send.type = 1; 
+	    	printf("Module : %hhu\n",send_msg.mdid);
+	        printf("Request : %hhu\n",send_msg.req_id);
+	    	send_msg.mdid = 0;
+	    	send_msg.req_id = 0;
+	    	send_msg.val = 0;
+	    	send_msg.type = 1; 
 	    	printf("-------------------------------------------\n\n");
 		}
-	    if (mq_send(mqdes_send, (char *)&struct_to_send, sizeof(struct_to_send), 1) == -1) 
+	    if (mq_send(mqdes_send, (char *)&send_msg, sizeof(send_msg), 1) == -1) 
 		{
 			perror("mq_send");
 			exit(EXIT_FAILURE);
