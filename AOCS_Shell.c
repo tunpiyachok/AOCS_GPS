@@ -20,6 +20,7 @@
 #include <time.h>
 #include "message.h"
 
+Message struct_type = {0};
 Message send_msg = {0}; // Initialize to 0
 Message receive_msg = {0};
 
@@ -36,7 +37,7 @@ void tcc_type(void*arg)
         exit(EXIT_FAILURE);
     }
 
-    // à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸Šà¸·à¹ˆà¸­ message queue à¹ƒà¸«à¹‰à¸£à¸­à¸‡à¸£à¸±à¸šà¸à¸²à¸£à¹€à¸Šà¸·à¹ˆà¸­à¸¡à¸•à¹ˆà¸­à¸à¸±à¸š msg_dis_can
+    // ??????????? message queue ???????????????????????? msg_dis_can
     mqd_t mqdes_type = mq_open("/mq_dispatch", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); // receive from msg_dis_can
     if (mqdes_type == -1) {
         perror("mq_open");
