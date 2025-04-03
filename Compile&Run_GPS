@@ -1,9 +1,9 @@
 Compiler
 gcc -c gps.c -o gps.o -pthread -lm -lrt
 gcc TM_GPS.c gps.o -o TM_GPS -pthread -lm -lrt
-gcc TC.c -o TC_GPS -pthread -lm -lrt
+gcc TC_GPS.c -o TC_GPS -pthread -lm -lrt
 gcc v2_Sender.c -o sender -lpthread -lrt
-gcc v2_Dispatcher_Split_Threads.c -o dispatcher -lpthread -lrt
+gcc AOCS_Shell.c -o AOCS_shell -lpthread -lrt
 
 Check port
 sudo minicom -D /dev/ttyAMA0
@@ -13,6 +13,6 @@ rm -rf /dev/mqueue/*
 
 Run
 ./sender
-./dispatcher
+./AOCS_shell
 ./TM_GPS
 ./TC_GPS
