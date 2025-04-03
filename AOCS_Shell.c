@@ -7,14 +7,6 @@
 #include <mqueue.h>
 #include <sys/stat.h>
 #include <string.h>//Dispatcher
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>  // for sleep(), usleep()
-#include <pthread.h> // the header file for the pthread lib
-#include <fcntl.h>
-#include <mqueue.h>
-#include <sys/stat.h>
-#include <string.h>
 #include <stdint.h>
 #include <sys/resource.h>
 #include <time.h>
@@ -107,7 +99,7 @@ void request_return(void*arg)
 		exit(EXIT_FAILURE);
 	}
 	
-	mqd_t mq_return = mq_open("/mq_return_sender", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //return to sender
+	mqd_t mq_return = mq_open("/mq_dispatch", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //return to sender
 	if (mq_return == -1) 
 	{
 		perror("mq_open");
@@ -157,7 +149,7 @@ void request_return(void*arg)
 	}
 	mq_close(mq_receive_req);
 		mq_close(mq_return);
-		mq_unlink("/mq_return_sender");
+		mq_unlink("/mq_dispatch");
 		mq_unlink("/mq_receive_req");
 
 	
