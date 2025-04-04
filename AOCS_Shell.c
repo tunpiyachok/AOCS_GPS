@@ -62,7 +62,6 @@ void tcc_type(void*arg)
             send_msg = receive_msg;
             printf("Send Module ID : %hhu\n", send_msg.mdid);
             printf("Send Request ID : %hhu\n", send_msg.req_id);
-            printf("Send Type : %hhu\n", send_msg.type);
             printf("Send Parameter : %hhu\n", send_msg.param);
             if (mq_send(mq_tc_gps, (char *)&send_msg, sizeof(Message), 1) == -1) {
                 perror("mq_send");
