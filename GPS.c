@@ -37,7 +37,7 @@ void status()
     }
     if (NMEA[0][0] == '\0') 
     {
-        NMEA[0][0] = '0'; // กำหนดค่าเป็น '0' เพื่อหลีกเลี่ยงการแปลงค่า \0
+        NMEA[0][0] = '0'; // ???????????? '0' ????????????????????????? \0
     }
     
     GPS_variable[0] = NMEA[0][0] - '0';
@@ -161,117 +161,129 @@ void *Log(void *arg) {
     char filename[100];  
     time_t now;
     struct tm *tm_info;
-    int time_log = 1;
-    
-    
+
     struct mq_attr attributes = {
-	    .mq_flags = 0,
-	    .mq_maxmsg = 10,
-	    .mq_curmsgs = 0,
-	    .mq_msgsize = sizeof(Message)
-     };
+        .mq_flags = 0,
+        .mq_maxmsg = 10,
+        .mq_curmsgs = 0,
+        .mq_msgsize = sizeof(Message)
+    };
 
-    Message struct_to_send = {0};
-    Message struct_to_receive = {0};
+    Message send_msg = {0};
+    Message receive_msg = {0};
 
-    // ´Ö§àÇÅÒ»Ñ¨¨ØºÑ¹à»ç¹ UNIX timestamp
     time(&now);
 
-    // ÊÃéÒ§ª×èÍä¿Åì¨Ò¡¤èÒàÇÅÒ UNIX
-    
     mqd_t mq_send_log = mq_open("/mq_telecommand_send_log", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
     if (mq_send_log == -1) {
         perror("mq_open");
         exit(EXIT_FAILURE);
     }
-   
-    
-    // à»Ô´ä¿ÅìÊÓËÃÑºà¢ÕÂ¹
-    while(1){
-      if (mq_receive(mq_send_log, (char *)&struct_to_receive, sizeof(struct_to_receive), NULL) == -1) {
-                    perror("mq_receive");
-                    exit(EXIT_FAILURE);
-      }
-      
-      if (struct_to_receive.req_id == 3 && (struct_to_receive.param >= 5 && struct_to_receive.param <= 60)) 
-      {
-        printf("Strat Log\n");
-        snprintf(filename, sizeof(filename), "gps_log_%ld.txt", (long)now);
-        log_file = fopen(filename, "w");
-          if (log_file == NULL) {
-              perror("Error opening log file");
-              exit(EXIT_FAILURE);
-          }
-        // à¢ÕÂ¹¢éÍÁÙÅ Header Å§ã¹ä¿Åì
-          fprintf(log_file, "Start Log Time: %ld\n", (long)now);
-          fprintf(log_file, "1, 0, 1, 2, \"Status\", 0, 1,0, []\n");
-          fprintf(log_file, "1, 0, 1, 2, \"Time\", 0, 1,0, []\n");
-          fprintf(log_file, "1, 0, 1, 3, \"Latitude\", 0, 0.000001, -180, degrees\n");
-          fprintf(log_file, "1, 0, 1, 5, \"Longitude\", 0, 0.000001, -90, degrees\n\n");
-          /*fprintf(log_file, "1, 0, 1, 6, \"Altitude\", 0, 0.01, 0, meter\n");
-          fprintf(log_file, "1, 0, 1, 7, \"Satellite on tracked\", 0, 1, 0, []\n");
-          fprintf(log_file, "1, 0, 1, 8, \"HDOP\", 0, 0.01, 0, []\n");
-          fprintf(log_file, "1, 0, 1, 9, \"COGs\", 0, 0.01, 0, degrees\n");
-          fprintf(log_file, "1, 0, 1, 10, \"Speed\", 0, 0.001, 0, m/s\n");*/
-          fflush(log_file);
-        
-        while(1){
-        printf("Strat Log\n");
-          // ´Ö§àÇÅÒÍÕ¡¤ÃÑé§¡èÍ¹ºÑ¹·Ö¡¤èÒ¨ÃÔ§
-          time(&now);
-          
-          // ºÑ¹·Ö¡¢éÍÁÙÅ GPS Å§ä¿Åì
-          fprintf(log_file, "%ld, ", (long)now);
-          fprintf(log_file, "%u, ", GPS_variable[0]);
-          fprintf(log_file, "%u, ", GPS_variable[1]);
-          fprintf(log_file, "%u, ", GPS_variable[2]);
-          fprintf(log_file, "%u, \n", GPS_variable[3]);
-          /*fprintf(log_file, "%hu, ", GPS_variable[4]);
-          fprintf(log_file, "%hhu, ", GPS_variable[5]);
-          fprintf(log_file, "%hu, ", GPS_variable[6]);
-          fprintf(log_file, "%hu, ", GPS_variable[7]);
-          fprintf(log_file, "%hu\n", GPS_variable[10]);*/
-          fflush(log_file);
-          
-          sleep(struct_to_receive.param);
-          struct timespec ts;
-                    clock_gettime(CLOCK_REALTIME, &ts);
-                    ts.tv_sec += 1; // ÃÍ 1 ÇÔ¹Ò·ÕÊÓËÃÑº message ãËÁè
 
-                    if (mq_timedreceive(mq_send_log, (char *)&struct_to_receive, sizeof(struct_to_receive), NULL, &ts) != -1) {
-                        if (struct_to_receive.req_id == 4) {
-                            printf("Stop Log\n");
-                            fclose(log_file);
-                            struct_to_receive.req_id = 0;
-                            break;
-                        } 
-                            
-                        }
-        }
-      }
+    mqd_t mq_return = mq_open("/mq_return", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
+    if (mq_return == -1) {
+        perror("mq_open /mq_return");
+        exit(EXIT_FAILURE);
     }
+
+    while (1) {
+        if (mq_receive(mq_send_log, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {
+            perror("mq_receive");
+            exit(EXIT_FAILURE);
+        }
+
+        if (receive_msg.req_id == 3 && (receive_msg.param >= 5 && receive_msg.param <= 60)) {
+            printf("Start Log\n");
+            snprintf(filename, sizeof(filename), "gps_log_%ld.txt", (long)now);
+            log_file = fopen(filename, "w");
+            if (log_file == NULL) {
+                perror("Error opening log file");
+                exit(EXIT_FAILURE);
+            }
+            fprintf(log_file, "Start Log Time: %ld\n", (long)now);
+            fprintf(log_file, "1, 0, 1, 2, \"Status\", 0, 1,0, []\n");
+            fprintf(log_file, "1, 0, 1, 2, \"Time\", 0, 1,0, []\n");
+            fprintf(log_file, "1, 0, 1, 3, \"Latitude\", 0, 0.000001, -180, degrees\n");
+            fprintf(log_file, "1, 0, 1, 5, \"Longitude\", 0, 0.000001, -90, degrees\n\n");
+            fflush(log_file);
+
+            // Send confirmation back for start log
+            send_msg = receive_msg;
+            send_msg.param = 1;
+            send_msg.type = 3;
+            send_msg.req_id = 3;
+            if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                perror("mq_send start_log");
+                exit(EXIT_FAILURE);
+            }
+
+            while (1) {
+                printf("Logging...\n");
+                time(&now);
+                fprintf(log_file, "%ld, ", (long)now);
+                fprintf(log_file, "%u, ", GPS_variable[0]);
+                fprintf(log_file, "%u, ", GPS_variable[1]);
+                fprintf(log_file, "%u, ", GPS_variable[2]);
+                fprintf(log_file, "%u, \n", GPS_variable[3]);
+                fflush(log_file);
+                sleep(receive_msg.param);
+
+                struct timespec ts;
+                clock_gettime(CLOCK_REALTIME, &ts);
+                ts.tv_sec += 1;
+
+                if (mq_timedreceive(mq_send_log, (char *)&receive_msg, sizeof(receive_msg), NULL, &ts) != -1) {
+                    if (receive_msg.req_id == 4) {
+                        printf("Stop Log\n");
+                        fclose(log_file);
+
+                        // Send confirmation back for stop log
+                        send_msg = receive_msg;
+                        send_msg.param = 1;
+                        send_msg.type = 3;
+                        send_msg.req_id = 4;
+                        if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                            perror("mq_send stop_log");
+                            exit(EXIT_FAILURE);
+                        }
+
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
     mq_close(mq_send_log);
     mq_unlink("/mq_telecommand_send_log");
-    
+    mq_close(mq_return);
+    mq_unlink("/mq_return");
     return NULL;
-
 }
 
 
+// ? GPS.c - update_variable()
 void *update_variable(void *arg) {
     int fd = OpenGPSPort("/dev/ttyAMA0");
-	
-	struct mq_attr attributes = {
-	    .mq_flags = 0,
-	    .mq_maxmsg = 10,
-	    .mq_curmsgs = 0,
-	    .mq_msgsize = sizeof(Message)
-	};
 
-    Message struct_to_send = {0};
-    Message struct_to_receive = {0};
+    struct mq_attr attributes = {
+        .mq_flags = 0,
+        .mq_maxmsg = 10,
+        .mq_curmsgs = 0,
+        .mq_msgsize = sizeof(Message)
+    };
+
+    Message send_msg = {0};
+    Message receive_msg = {0};
+
     mqd_t mq_send_read = mq_open("/mq_telecommand_send_read", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
     if (mq_send_read == -1) {
+        perror("mq_open");
+        exit(EXIT_FAILURE);
+    }
+
+    mqd_t mq_return = mq_open("/mq_return", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
+    if (mq_return == -1) {
         perror("mq_open");
         exit(EXIT_FAILURE);
     }
@@ -279,57 +291,75 @@ void *update_variable(void *arg) {
     while (1) {
         status();
         latitude();
-	      longitude();
-         //printf("%u\n",GPS_variable[0]);
-	    //printf("%s\n",GPS_variable[1]);
-	    //printf("%f\n",GPS_variable[3]*0.000001);
+        longitude();
+
         if (GPS_variable[0] != 0) {
             GPS_variable[12] = 1;
-            
 
             if (GPS_variable[12] == 1 && GPS_variable[0] == 1) {
-                if (mq_receive(mq_send_read, (char *)&struct_to_receive, sizeof(struct_to_receive), NULL) == -1) {
+                if (mq_receive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {
                     perror("mq_receive");
                     exit(EXIT_FAILURE);
                 }
-            }
 
-            if (struct_to_receive.req_id == 1 && GPS_variable[0] == 1) {
-                struct_to_receive.req_id = 0;
-                printf("Start Sampling\n");
-                while (1) {
-                    GPS_variable[0] = 2;
-                    GPS_time();
-                    latitude();
-                    longitude();
-                    /*Altitude();
-                    Sat_on_Traked();
-                    HDOP();
-                    COGs();
-                    SOG();*/
-                    struct timespec ts;
-                    clock_gettime(CLOCK_REALTIME, &ts);
-                    ts.tv_sec += 1; // ÃÍ 1 ÇÔ¹Ò·ÕÊÓËÃÑº message ãËÁè
+                send_msg = receive_msg;
+                if (receive_msg.req_id == 1 && receive_msg.mdid == 3) {
+                    // ? ???????????? GPS ????
+                    send_msg.param = 1;
+                    send_msg.type = 3;
+                    printf("[GPS] Sampling Start - Param: %u\n", send_msg.param);
+                    if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                        perror("mq_send");
+                        exit(EXIT_FAILURE);
+                    }
 
-                    if (mq_timedreceive(mq_send_read, (char *)&struct_to_receive, sizeof(struct_to_receive), NULL, &ts) != -1) {
-                        if (struct_to_receive.req_id == 2) {
-                            printf("Stop Sampling\n");
-                            memset(GPS_variable, 0, sizeof(GPS_variable));
-                            struct_to_receive.req_id = 0;
-                            break;
-                        } 
-                            
+                    while (1) {
+                        GPS_variable[0] = 2;
+                        GPS_time();
+                        latitude();
+                        longitude();
+
+                        struct timespec ts;
+                        clock_gettime(CLOCK_REALTIME, &ts);
+                        ts.tv_sec += 1;
+                        if (mq_timedreceive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL, &ts) != -1) {
+                            if (receive_msg.req_id == 2) {
+                                printf("[GPS] Stop Sampling\n");
+                                memset(GPS_variable, 0, sizeof(GPS_variable));
+                                break;
+                            }
                         }
                     }
                 }
             }
+        } else {
+            // ? GPS ??????????? - ??????? param = 0
+            if (mq_receive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {
+                perror("mq_receive (deny)");
+                exit(EXIT_FAILURE);
+            }
+
+                send_msg = receive_msg;
+                send_msg.param = 0;
+                send_msg.type = 3;
+                printf("[GPS] Deny Request - Param: 0\n");
+                if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                    perror("mq_send (deny)");
+                    exit(EXIT_FAILURE);
+                }
             
-        } 
-        mq_close(mq_send_read);
-        mq_unlink("/mq_telecommand_send_read");
-    
-        return NULL;
+        }
+    }
+
+    mq_close(mq_send_read);
+    mq_close(mq_return);
+    mq_unlink("/mq_return");
+    mq_unlink("/mq_telecommand_send_read");
+    return NULL;
 }
+
+
+
 
     
     
@@ -489,5 +519,4 @@ int parse_comma_delimited_str(char *string, char **fields, int max_fields)
     }
     return i - 1;
 }
-
 
