@@ -263,6 +263,7 @@ void *Log(void *arg) {
 
 
 // ? GPS.c - update_variable()
+// ? GPS.c - update_variable()
 void *update_variable(void *arg) {
     int fd = OpenGPSPort("/dev/ttyAMA0");
 
@@ -301,9 +302,10 @@ void *update_variable(void *arg) {
                     perror("mq_receive");
                     exit(EXIT_FAILURE);
                 }
+			}
 
                 send_msg = receive_msg;
-                if (receive_msg.req_id == 1 && receive_msg.mdid == 3) {
+                if (receive_msg.req_id == 1 && GPS_variable[12] = 1) {
                     // ? ???????????? GPS ????
                     send_msg.param = 1;
                     send_msg.type = 3;
@@ -331,7 +333,7 @@ void *update_variable(void *arg) {
                         }
                     }
                 }
-            }
+            
         } else {
             // ? GPS ??????????? - ??????? param = 0
             if (mq_receive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {
