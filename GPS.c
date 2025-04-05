@@ -262,7 +262,6 @@ void *Log(void *arg) {
 }
 
 
-// ? GPS.c - update_variable()
 void *update_variable(void *arg) {
     int fd = OpenGPSPort("/dev/ttyAMA0");
 
@@ -289,9 +288,10 @@ void *update_variable(void *arg) {
     }
 
     while (1) {
-        status();
+        //status();
         latitude();
         longitude();
+        GPS_variable[0] = 1;
 
         if (GPS_variable[0] != 0) {
             GPS_variable[12] = 1;
@@ -336,16 +336,23 @@ void *update_variable(void *arg) {
 
                                 break;
                             }
+                            else if (receive_msg.req_id != 2){
+                              send_msg = receive_msg;
+                              send_msg.param = 0;
+                              send_msg.type = 3;
+                              printf("[GPS] Deny Request - Param: 0\n");
+                              if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                                  perror("mq_send (deny)");
+                                  exit(EXIT_FAILURE);
+                              }
+                        
+                            }
                         }
+                        
                     }
                 }
-            
-        } else {
+                else {
             // ? GPS ??????????? - ??????? param = 0
-            if (mq_receive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {
-                perror("mq_receive (deny)");
-                exit(EXIT_FAILURE);
-            }
 
                 send_msg = receive_msg;
                 send_msg.param = 0;
@@ -357,6 +364,8 @@ void *update_variable(void *arg) {
                 }
             
         }
+            
+        } 
     }
 
     mq_close(mq_send_read);
@@ -365,13 +374,6 @@ void *update_variable(void *arg) {
     mq_unlink("/mq_telecommand_send_read");
     return NULL;
 }
-
-
-
-    
-    
-
-
 
 void *read_GPS(void *arg) {
     int fd = -1; // Initialize fd as -1
