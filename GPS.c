@@ -262,6 +262,7 @@ void *Log(void *arg) {
 }
 
 
+// ? GPS.c - update_variable()
 void *update_variable(void *arg) {
     int fd = OpenGPSPort("/dev/ttyAMA0");
 
@@ -288,10 +289,9 @@ void *update_variable(void *arg) {
     }
 
     while (1) {
-        //status();
+        status();
         latitude();
         longitude();
-        GPS_variable[0] = 1;
 
         if (GPS_variable[0] != 0) {
             GPS_variable[12] = 1;
@@ -374,6 +374,13 @@ void *update_variable(void *arg) {
     mq_unlink("/mq_telecommand_send_read");
     return NULL;
 }
+
+
+
+    
+    
+
+
 
 void *read_GPS(void *arg) {
     int fd = -1; // Initialize fd as -1
