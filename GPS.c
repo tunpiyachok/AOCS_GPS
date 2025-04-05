@@ -263,7 +263,6 @@ void *Log(void *arg) {
 
 
 // ? GPS.c - update_variable()
-// ? GPS.c - update_variable()
 void *update_variable(void *arg) {
     int fd = OpenGPSPort("/dev/ttyAMA0");
 
@@ -305,7 +304,7 @@ void *update_variable(void *arg) {
 			}
 
                 send_msg = receive_msg;
-                if (receive_msg.req_id == 1 && GPS_variable[12] = 1) {
+                if (receive_msg.req_id == 1 && GPS_variable[12] == 1) {
                     // ? ???????????? GPS ????
                     send_msg.param = 1;
                     send_msg.type = 3;
@@ -326,8 +325,15 @@ void *update_variable(void *arg) {
                         ts.tv_sec += 1;
                         if (mq_timedreceive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL, &ts) != -1) {
                             if (receive_msg.req_id == 2) {
+                                send_msg.param = 1;
+                                send_msg.type = 3;
                                 printf("[GPS] Stop Sampling\n");
                                 memset(GPS_variable, 0, sizeof(GPS_variable));
+                                if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                                    perror("mq_send");
+                                    exit(EXIT_FAILURE);
+                                }
+
                                 break;
                             }
                         }
@@ -359,7 +365,6 @@ void *update_variable(void *arg) {
     mq_unlink("/mq_telecommand_send_read");
     return NULL;
 }
-
 
 
 
