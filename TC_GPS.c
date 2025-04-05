@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
+#include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <termios.h>
 #include <time.h>
+#include <stdlib.h>
 #include <mqueue.h>
 #include <sys/stat.h>
 #include <sys/resource.h>
@@ -42,6 +45,11 @@ void send(void*arg)
         perror("mq_open()");
         exit(1);
     }
+    mqd_t mqdes_send = mq_open("/mq_receive_req", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
+    if (mqdes_send == -1) {
+        perror("mq_open /mq_receive_req");
+        exit(EXIT_FAILURE);
+    }
 
     while (1)
     {
@@ -57,7 +65,7 @@ void send(void*arg)
         	send_msg.val = 0;
 	        printf("Module : %hhu\n",send_msg.mdid);
 	        printf("Request : %hhu\n",send_msg.req_id);
-          printf("-------------------------------------------\n\n");
+          printf("---------------------With for response----------------------\n\n");
           if (mq_send(mq_send_read, (char *)&send_msg, sizeof(send_msg), 1) == -1) 
     			{
     				perror("mq_send");
@@ -70,8 +78,7 @@ void send(void*arg)
         	send_msg.val = 1;
 	        printf("Module : %hhu\n",send_msg.mdid);
 	        printf("Request : %hhu\n",send_msg.req_id);
-	        printf("Return : %u\n", send_msg.val);
-          printf("-------------------------------------------\n\n");
+          printf("---------------------With for response----------------------\n\n");
           if (mq_send(mq_send_read, (char *)&send_msg, sizeof(send_msg), 1) == -1) 
     			{
     				perror("mq_send");
@@ -84,7 +91,7 @@ void send(void*arg)
 	        printf("Module : %hhu\n",send_msg.mdid);
 	        printf("Request : %hhu\n",send_msg.req_id);
 	        printf("Parameter. : %hhu\n",send_msg.param);
-          printf("-------------------------------------------\n\n");
+          printf("---------------------With for response----------------------\n\n");
           if (mq_send(mq_send_log, (char *)&send_msg, sizeof(send_msg), 1) == -1) 
     			{
     				perror("mq_send");
@@ -97,7 +104,7 @@ void send(void*arg)
 	        printf("Module : %hhu\n",send_msg.mdid);
 	        printf("Request : %hhu\n",send_msg.req_id);
 	        printf("Parameter : %hhu\n",send_msg.param);
-          printf("-------------------------------------------\n\n");
+          printf("---------------------With for response----------------------\n\n");
           if (mq_send(mq_send_log, (char *)&send_msg, sizeof(send_msg), 1) == -1) 
     			{
     				perror("mq_send");
@@ -106,14 +113,17 @@ void send(void*arg)
         }
         else
 	    {
-	    	printf("Request has deny\n");
-	    	printf("Module : %hhu\n",send_msg.mdid);
-        printf("Request : %hhu\n",send_msg.req_id);
-	    	send_msg.mdid = 0;
-	    	send_msg.req_id = 0;
-	    	send_msg.val = 0;
-	    	send_msg.type = 1; 
-	    	printf("-------------------------------------------\n\n");
+             receive_msg.type = 3;
+	    	    receive_msg.param = 0;
+            printf("Module : %hhu\n",receive_msg.mdid);
+            printf("Request : %hhu\n",receive_msg.req_id);
+            printf("Return Parameter : %u\n",receive_msg.param);
+            printf("[TC_GPS] Unknown request received.\n");
+            printf("-------------------------------------------\n\n");
+            if (mq_send(mqdes_send, (char *)&receive_msg, sizeof(receive_msg), 1) == -1) {
+                perror("mq_send /mq_receive_req");
+                exit(EXIT_FAILURE);
+            }
 		  }
         
         Message send_msg = {0};
@@ -162,14 +172,13 @@ void return_AOCS_shell(void* arg) {
             (receive_msg.req_id == 1 || receive_msg.req_id == 2 || receive_msg.req_id == 3 || receive_msg.req_id == 4)) {
             printf("Module : %hhu\n",receive_msg.mdid);
             printf("Request : %hhu\n",receive_msg.req_id);
-            printf("Parameter : %u\n",receive_msg.param);
+            printf("Return Parameter : %u\n",receive_msg.param);
+            printf("-------------------------------------------\n\n");
 
             if (mq_send(mqdes_send, (char *)&receive_msg, sizeof(receive_msg), 1) == -1) {
                 perror("mq_send /mq_receive_req");
                 exit(EXIT_FAILURE);
             }
-        } else {
-            printf("[TC_GPS] Unknown request received.\n");
         }
     }
 
