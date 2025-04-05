@@ -366,6 +366,22 @@ void *update_variable(void *arg) {
         }
             
         } 
+        else {
+            // ? GPS ??????????? - ??????? param = 0
+                if (mq_receive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {
+                    perror("mq_receive (deny)");
+                    exit(EXIT_FAILURE);
+                }
+                send_msg = receive_msg;
+                send_msg.param = 0;
+                send_msg.type = 3;
+                printf("[GPS] Deny Request - Param: 0\n");
+                if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                    perror("mq_send (deny)");
+                    exit(EXIT_FAILURE);
+                }
+            
+        }
     }
 
     mq_close(mq_send_read);
@@ -535,4 +551,3 @@ int parse_comma_delimited_str(char *string, char **fields, int max_fields)
     }
     return i - 1;
 }
-
