@@ -1,3 +1,6 @@
+/*
+Development by : Piyachok Ridsadaeng
+*/
 //AOCS_Shell
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,12 +21,12 @@ Message receive_msg = {0}; // Initialize to 0
 
 void tcc_type(void*arg) //recive from flight software and send to AOCS system
 {
-    mqd_t mq_GPS = mq_open("/mq_GPS", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //send to TM_Monitor
+    mqd_t mq_GPS = mq_open("/mq_GPS", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //send to TM_Monitoring
     if (mq_GPS == -1) {
         perror("mq_open");
         exit(EXIT_FAILURE);
     }
-    mqd_t mq_tc_gps = mq_open("/mq_tc_gps", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //send to TC_Monitor
+    mqd_t mq_tc_gps = mq_open("/mq_tc_gps", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //send to TC_Monitoring
     if (mq_tc_gps == -1) {
         perror("mq_open");
         exit(EXIT_FAILURE);
