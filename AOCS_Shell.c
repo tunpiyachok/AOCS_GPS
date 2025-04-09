@@ -1,22 +1,22 @@
-//Dispatcher
+//AOCS_Shell
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>  // for sleep(), usleep()
-#include <pthread.h> // the header file for the pthread lib
+#include <unistd.h>
+#include <pthread.h>
 #include <fcntl.h>
 #include <mqueue.h>
 #include <sys/stat.h>
-#include <string.h>//Dispatcher
+#include <string.h>
 #include <stdint.h>
 #include <sys/resource.h>
 #include <time.h>
 #include "message.h"
 
-Message struct_type = {0};
+Message struct_type = {0}; // Initialize to 0
 Message send_msg = {0}; // Initialize to 0
-Message receive_msg = {0};
+Message receive_msg = {0}; // Initialize to 0
 
-void tcc_type(void*arg)
+void tcc_type(void*arg) //recive from flight software and send to AOCS system
 {
     mqd_t mq_GPS = mq_open("/mq_GPS", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //send to TM_Monitor
     if (mq_GPS == -1) {
@@ -30,13 +30,8 @@ void tcc_type(void*arg)
     }
 
     // ??????????? message queue ???????????????????????? msg_dis_can
-    mqd_t mqdes_type = mq_open("/mq_dispatch", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); // receive from msg_dis_can
+    mqd_t mqdes_type = mq_open("/mq_dispatch", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); // receive from flight software
     if (mqdes_type == -1) {
-        perror("mq_open");
-        exit(EXIT_FAILURE);
-    }
-    mqd_t mq_return = mq_open("/mq_dispatch", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); // send to msg_dis_can
-    if (mq_return == -1) {
         perror("mq_open");
         exit(EXIT_FAILURE);
     }
@@ -68,15 +63,7 @@ void tcc_type(void*arg)
                 exit(EXIT_FAILURE);
             }
             printf("-------------------------------------------\n");
-        } else {
-            printf("Have no request\n");
-            send_msg = (Message){0};
-            if (mq_send(mq_return, (char *)&send_msg, sizeof(Message), 1) == -1) {
-                perror("mq_send");
-                exit(EXIT_FAILURE);
-            }
-            printf("-------------------------------------------\n");
-        }
+        } 
         send_msg = (Message){0};
         receive_msg = (Message){0};
     }
@@ -89,9 +76,9 @@ void tcc_type(void*arg)
     mq_unlink("/mq_dispatch");
 }
 
-void request_return(void*arg)
+void request_return(void*arg) //recive from AOCS system and return to flight software
 {
-	mqd_t mq_receive_req = mq_open("/mq_receive_req", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //return to sender
+	mqd_t mq_receive_req = mq_open("/mq_receive_req", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); //return from AOCS system
 	if (mq_receive_req == -1) 
 	{
 		perror("mq_open");
