@@ -35,6 +35,11 @@ void tcc_type(void*arg) //recive from flight software and send to AOCS system
         perror("mq_open");
         exit(EXIT_FAILURE);
     }
+    mqd_t mq_return = mq_open("/mq_dispatch", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes); // send to msg_dis_can
+    if (mq_return == -1) {
+        perror("mq_open");
+        exit(EXIT_FAILURE);
+    }
 
     while(1) {
         if (mq_receive(mqdes_type, (char *)&receive_msg, sizeof(Message), NULL) == -1) {
@@ -63,7 +68,15 @@ void tcc_type(void*arg) //recive from flight software and send to AOCS system
                 exit(EXIT_FAILURE);
             }
             printf("-------------------------------------------\n");
-        } 
+        } else {
+            printf("Have no request\n");
+            send_msg = (Message){0};
+            if (mq_send(mq_return, (char *)&send_msg, sizeof(Message), 1) == -1) {
+                perror("mq_send");
+                exit(EXIT_FAILURE);
+            }
+            printf("-------------------------------------------\n");
+        }
         send_msg = (Message){0};
         receive_msg = (Message){0};
     }
