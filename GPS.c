@@ -37,7 +37,7 @@ void status()
     }
     if (NMEA[0][0] == '\0') 
     {
-        NMEA[0][0] = '0'; // ???????????? '0' ????????????????????????? \0
+        NMEA[0][0] = '0';
     }
     
     GPS_variable[0] = NMEA[0][0] - '0';
@@ -174,20 +174,20 @@ void *Log(void *arg) {
 
     time(&now);
 
-    mqd_t mq_send_log = mq_open("/mq_telecommand_send_log", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
+    mqd_t mq_send_log = mq_open("/mq_telecommand_send_log", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);//recive from TC_monitoring
     if (mq_send_log == -1) {
         perror("mq_open");
         exit(EXIT_FAILURE);
     }
 
-    mqd_t mq_return = mq_open("/mq_return", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
+    mqd_t mq_return = mq_open("/mq_return", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);//return to TC_monitoring
     if (mq_return == -1) {
         perror("mq_open /mq_return");
         exit(EXIT_FAILURE);
     }
 
     while (1) {
-        if (mq_receive(mq_send_log, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {
+        if (mq_receive(mq_send_log, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) { //receive message from TC_monitoring
             perror("mq_receive");
             exit(EXIT_FAILURE);
         }
@@ -212,7 +212,7 @@ void *Log(void *arg) {
             send_msg.param = 1;
             send_msg.type = 3;
             send_msg.req_id = 3;
-            if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+            if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) { //return message to TC_monitoring
                 perror("mq_send start_log");
                 exit(EXIT_FAILURE);
             }
@@ -232,7 +232,7 @@ void *Log(void *arg) {
                 clock_gettime(CLOCK_REALTIME, &ts);
                 ts.tv_sec += 1;
 
-                if (mq_timedreceive(mq_send_log, (char *)&receive_msg, sizeof(receive_msg), NULL, &ts) != -1) {
+                if (mq_timedreceive(mq_send_log, (char *)&receive_msg, sizeof(receive_msg), NULL, &ts) != -1) {//receive message from TC_monitoring
                     if (receive_msg.req_id == 4) {
                         printf("Stop Log\n");
                         fclose(log_file);
@@ -242,7 +242,7 @@ void *Log(void *arg) {
                         send_msg.param = 1;
                         send_msg.type = 3;
                         send_msg.req_id = 4;
-                        if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                        if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {//return message to TC_monitoring
                             perror("mq_send stop_log");
                             exit(EXIT_FAILURE);
                         }
@@ -262,7 +262,7 @@ void *Log(void *arg) {
 }
 
 
-// ? GPS.c - update_variable()
+//GPS.c - update_variable()
 void *update_variable(void *arg) {
     int fd = OpenGPSPort("/dev/ttyAMA0");
 
@@ -273,16 +273,16 @@ void *update_variable(void *arg) {
         .mq_msgsize = sizeof(Message)
     };
 
-    Message send_msg = {0};
-    Message receive_msg = {0};
+    Message send_msg = {0}; //Initialize to 0
+    Message receive_msg = {0}; //Initialize to 0
 
-    mqd_t mq_send_read = mq_open("/mq_telecommand_send_read", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
+    mqd_t mq_send_read = mq_open("/mq_telecommand_send_read", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);//receive from TC_monitoring
     if (mq_send_read == -1) {
         perror("mq_open");
         exit(EXIT_FAILURE);
     }
 
-    mqd_t mq_return = mq_open("/mq_return", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
+    mqd_t mq_return = mq_open("/mq_return", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);// return to RC_monitoring
     if (mq_return == -1) {
         perror("mq_open");
         exit(EXIT_FAILURE);
@@ -297,7 +297,7 @@ void *update_variable(void *arg) {
             GPS_variable[12] = 1;
 
             if (GPS_variable[12] == 1 && GPS_variable[0] == 1) {
-                if (mq_receive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {
+                if (mq_receive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {//receive message from TC_monitoring
                     perror("mq_receive");
                     exit(EXIT_FAILURE);
                 }
@@ -309,7 +309,7 @@ void *update_variable(void *arg) {
                     send_msg.param = 1;
                     send_msg.type = 3;
                     printf("[GPS] Sampling Start - Param: %u\n", send_msg.param);
-                    if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                    if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {//return message to TC_monitoring
                         perror("mq_send");
                         exit(EXIT_FAILURE);
                     }
@@ -323,13 +323,13 @@ void *update_variable(void *arg) {
                         struct timespec ts;
                         clock_gettime(CLOCK_REALTIME, &ts);
                         ts.tv_sec += 1;
-                        if (mq_timedreceive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL, &ts) != -1) {
+                        if (mq_timedreceive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL, &ts) != -1) {// receive message from TC_monitoring
                             if (receive_msg.req_id == 2) {
                                 send_msg.param = 1;
                                 send_msg.type = 3;
                                 printf("[GPS] Stop Sampling\n");
                                 memset(GPS_variable, 0, sizeof(GPS_variable));
-                                if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                                if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {// return message to TC_monitoring
                                     perror("mq_send");
                                     exit(EXIT_FAILURE);
                                 }
@@ -341,7 +341,7 @@ void *update_variable(void *arg) {
                               send_msg.param = 0;
                               send_msg.type = 3;
                               printf("[GPS] Deny Request - Param: 0\n");
-                              if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                              if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {// return message to TC_monitoring
                                   perror("mq_send (deny)");
                                   exit(EXIT_FAILURE);
                               }
@@ -352,23 +352,19 @@ void *update_variable(void *arg) {
                     }
                 }
                 else {
-            // ? GPS ??????????? - ??????? param = 0
-
-                send_msg = receive_msg;
-                send_msg.param = 0;
-                send_msg.type = 3;
-                printf("[GPS] Deny Request - Param: 0\n");
-                if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
-                    perror("mq_send (deny)");
-                    exit(EXIT_FAILURE);
-                }
-            
-        }
+	                send_msg = receive_msg;
+	                send_msg.param = 0;
+	                send_msg.type = 3;
+	                printf("[GPS] Deny Request - Param: 0\n");
+	                if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {// return message to TC_monitoring
+	                    perror("mq_send (deny)");
+	                    exit(EXIT_FAILURE);
+	                }
+        	}
             
         } 
         else {
-            // ? GPS ??????????? - ??????? param = 0
-                if (mq_receive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {
+                if (mq_receive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {// receive message from TC_monitoring
                     perror("mq_receive (deny)");
                     exit(EXIT_FAILURE);
                 }
@@ -376,7 +372,7 @@ void *update_variable(void *arg) {
                 send_msg.param = 0;
                 send_msg.type = 3;
                 printf("[GPS] Deny Request - Param: 0\n");
-                if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {
+                if (mq_send(mq_return, (char *)&send_msg, sizeof(send_msg), 1) == -1) {// return message to TC_monitoring
                     perror("mq_send (deny)");
                     exit(EXIT_FAILURE);
                 }
@@ -390,13 +386,6 @@ void *update_variable(void *arg) {
     mq_unlink("/mq_telecommand_send_read");
     return NULL;
 }
-
-
-
-    
-    
-
-
 
 void *read_GPS(void *arg) {
     int fd = -1; // Initialize fd as -1
