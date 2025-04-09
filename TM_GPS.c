@@ -1,3 +1,7 @@
+/*
+Development by : Piyachok Ridsadaeng
+*/
+//TM monitoring
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -16,6 +20,16 @@
 Message send_msg = {0};
 Message receive_msg = {0};
 
+/*
+GPS_variable[0] = GPS status
+GPS_variable[1] = find GPS
+GPS_variable[2] = GPS time
+GPS_variable[3] = Latitude
+GPS_variable[4] = Longitude
+GPS_variable[8] = Direction N/S
+GPS_variable[9] = Direction E/W
+*/
+
 int main()
 {	
 	pthread_t GPS,update,log_thread;
@@ -27,17 +41,17 @@ int main()
 	pthread_attr_init(&attr);
 	pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
 	
-  pthread_create(&log_thread, NULL, Log, NULL);
+  	pthread_create(&log_thread, NULL, Log, NULL);
 	pthread_create(&update, &attr, &update_variable, NULL);
 	pthread_create(&GPS, NULL, &read_GPS, NULL);
 	
-	mqd_t mq_GPS = mq_open("/mq_GPS", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
+	mqd_t mq_GPS = mq_open("/mq_GPS", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);// receive from AOCS shell
 	if (mq_GPS == -1) 
 	{
 	    perror("mq_open");
 	    exit(EXIT_FAILURE);
 	}
-	mqd_t mqdes_send = mq_open("/mq_receive_req", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);
+	mqd_t mqdes_send = mq_open("/mq_receive_req", O_CREAT | O_RDWR, S_IRUSR | S_IWUSR, &attributes);// return to AOCS shell
 	if (mqdes_send == -1) {
 	    perror("mq_open");
 	    exit(EXIT_FAILURE);
@@ -54,7 +68,7 @@ int main()
 		send_msg = receive_msg;
 		if (receive_msg.mdid == 3 && receive_msg.req_id == 1) 
 		{
-	        send_msg.val = GPS_variable[12];
+	        send_msg.val = GPS_variable[1];
 	        printf("Module : %hhu\n",send_msg.mdid);
 	        printf("Request : %hhu\n",send_msg.req_id);
 	    	printf("Find GPS : %u\n", send_msg.val);
@@ -72,7 +86,7 @@ int main()
 	    }
 	    else if (receive_msg.mdid == 3 && receive_msg.req_id == 3) 
 		{
-	        send_msg.val = GPS_variable[1];
+	        send_msg.val = GPS_variable[2];
 	        printf("Module : %hhu\n",send_msg.mdid);
 	        printf("Request : %hhu\n",send_msg.req_id);
 	    	printf("UNIXTIME : %u\n", send_msg.val);
@@ -81,7 +95,7 @@ int main()
 	    }
 	    else if (receive_msg.mdid == 3 && receive_msg.req_id == 4) 
 		{
-			send_msg.val = GPS_variable[2];
+			send_msg.val = GPS_variable[3];
 			send_msg.param = GPS_variable[8];
 	        printf("Module : %hhu\n",send_msg.mdid);
 	        printf("Request : %hhu\n",send_msg.req_id);
@@ -91,7 +105,7 @@ int main()
 	    }
 	    else if (receive_msg.mdid == 3 && receive_msg.req_id == 5) 
 		{
-			send_msg.val = GPS_variable[3];
+			send_msg.val = GPS_variable[4];
 			send_msg.param = GPS_variable[9];
 	        printf("Module : %hhu\n",send_msg.mdid);
 	        printf("Request : %hhu\n",send_msg.req_id);
