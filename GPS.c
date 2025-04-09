@@ -9,7 +9,6 @@
 #include <math.h>
 #include <time.h>
 #include <sys/resource.h>
-#include <stdlib.h>
 #include <mqueue.h>
 #include "gps.h"
 #include "message.h"
@@ -24,6 +23,13 @@ int OpenGPSPort(const char *devname);
 
 char NMEA[MAX_FIELDS][255] = {0};
 int GPS_variable[20] = {0};
+/*
+GPS_variable[0] = GPS status
+GPS_variable[1] = find GPS
+GPS_variable[2] = GPS time
+GPS_variable[3] = Latitude
+GPS_variable[4] = Longitude
+*/
 
 void status()
 {   
@@ -83,7 +89,7 @@ void GPS_time()
     int days = days_between(start_date, end_date);
     
     year = days*86400;
-    GPS_variable[1] = year+hour+min+sec;
+    GPS_variable[2] = year+hour+min+sec;
     
 
 }
@@ -120,7 +126,7 @@ void latitude()
     raw_latitude = raw_latitude*0.00001;
     Flatitude = (raw_latitude/100);
     Blatitude = fmod(raw_latitude, 100.0);
-    GPS_variable[2] = (Flatitude+(Blatitude/60))*1000000;
+    GPS_variable[3] = (Flatitude+(Blatitude/60))*1000000;
     
 }
 
@@ -152,7 +158,7 @@ void longitude()
     raw_longitude = raw_longitude*0.00001;
     Flongitude = (raw_longitude/100);
     Blongitude = fmod(raw_longitude, 100.0);
-    GPS_variable[3] = (Flongitude+(Blongitude/60))*1000000;
+    GPS_variable[4] = (Flongitude+(Blongitude/60))*1000000;
 }
 
 
@@ -294,9 +300,9 @@ void *update_variable(void *arg) {
         longitude();
 
         if (GPS_variable[0] != 0) {
-            GPS_variable[12] = 1;
+            GPS_variable[1] = 1;
 
-            if (GPS_variable[12] == 1 && GPS_variable[0] == 1) {
+            if (GPS_variable[1] == 1 && GPS_variable[0] == 1) {
                 if (mq_receive(mq_send_read, (char *)&receive_msg, sizeof(receive_msg), NULL) == -1) {//receive message from TC_monitoring
                     perror("mq_receive");
                     exit(EXIT_FAILURE);
@@ -304,7 +310,7 @@ void *update_variable(void *arg) {
 			}
 
                 send_msg = receive_msg;
-                if (receive_msg.req_id == 1 && GPS_variable[12] == 1) {
+                if (receive_msg.req_id == 1 && GPS_variable[1] == 1) {
                     // ? ???????????? GPS ????
                     send_msg.param = 1;
                     send_msg.type = 3;
