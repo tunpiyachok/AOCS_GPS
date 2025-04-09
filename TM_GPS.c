@@ -1,7 +1,7 @@
 /*
 Development by : Piyachok Ridsadaeng
 */
-//TM monitoring
+//Temetry GPS monitoring
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
