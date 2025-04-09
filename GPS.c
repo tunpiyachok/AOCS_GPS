@@ -1,3 +1,7 @@
+/*
+Development by : Piyachok Ridsadaeng
+*/
+//GPS module
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -29,6 +33,8 @@ GPS_variable[1] = find GPS
 GPS_variable[2] = GPS time
 GPS_variable[3] = Latitude
 GPS_variable[4] = Longitude
+GPS_variable[8] = Direction N/S
+GPS_variable[9] = Direction E/W
 */
 
 void status()
